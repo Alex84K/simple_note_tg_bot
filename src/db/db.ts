@@ -25,6 +25,7 @@ db.exec(`
     type        TEXT NOT NULL CHECK (type IN ('text', 'link', 'image', 'file')),
     content     TEXT,
     file_path   TEXT,
+    telegram_message_id INTEGER,
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at  TEXT

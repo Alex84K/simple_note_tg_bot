@@ -8,6 +8,7 @@ export interface Note {
   type: NoteType;
   content: string | null;
   file_path: string | null;
+  telegram_message_id: number | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -38,19 +39,24 @@ export interface CreateNoteInput {
   content?: string | null;
   filePath?: string | null;
   tags?: string[];
+  telegramMessageId?: number | null;
 }
 
 export function createNote(input: CreateNoteInput): number {
   const note = db
-    .query<{ id: number }, [number, NoteType, string | null, string | null]>(
-      `INSERT INTO notes (user_id, type, content, file_path)
-       VALUES (?, ?, ?, ?) RETURNING id`,
+    .query<
+      { id: number },
+      [number, NoteType, string | null, string | null, number | null]
+    >(
+      `INSERT INTO notes (user_id, type, content, file_path, telegram_message_id)
+       VALUES (?, ?, ?, ?, ?) RETURNING id`,
     )
     .get(
       input.userId,
       input.type,
       input.content ?? null,
       input.filePath ?? null,
+      input.telegramMessageId ?? null,
     );
 
   const noteId = note!.id;

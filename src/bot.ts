@@ -71,6 +71,10 @@ bot.command("get", (ctx) => {
   if (note.content) lines.push(note.content);
   if (note.file_path) lines.push(`📁 ${note.file_path}`);
   lines.push(`📅 ${note.created_at}`);
+  if (note.telegram_message_id) {
+    const link = `tg://openmessage?user_id=${ctx.from!.id}&message_id=${note.telegram_message_id}`;
+    lines.push(`🔗 ${link}`);
+  }
   return ctx.reply(lines.join("\n"));
 });
 
@@ -89,7 +93,13 @@ bot.on("message:text", (ctx) => {
   const userId = getOrCreateUser(ctx.from.id);
   const tags = extractTags(text);
   const type = isLink(text) ? "link" : "text";
-  const id = createNote({ userId, type, content: text, tags });
+  const id = createNote({
+    userId,
+    type,
+    content: text,
+    tags,
+    telegramMessageId: ctx.message.message_id,
+  });
   return ctx.reply(`Сохранено ${TYPE_ICON[type]} #${id}`);
 });
 
@@ -106,6 +116,7 @@ bot.on("message:photo", async (ctx) => {
     content: caption,
     filePath: path,
     tags,
+    telegramMessageId: ctx.message.message_id,
   });
   return ctx.reply(`Сохранено 🖼 #${id}`);
 });
@@ -123,6 +134,7 @@ bot.on("message:document", async (ctx) => {
     content: caption,
     filePath: path,
     tags,
+    telegramMessageId: ctx.message.message_id,
   });
   return ctx.reply(`Сохранено 📎 #${id}`);
 });
