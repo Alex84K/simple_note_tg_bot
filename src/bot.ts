@@ -5,6 +5,7 @@ import {
   createNote,
   listNotes,
   searchNotes,
+  getNoteById,
   softDeleteNote,
   type Note,
 } from "./db/repo.ts";
@@ -37,6 +38,7 @@ bot.command("start", (ctx) =>
       "Команды:\n" +
       "/list — последние заметки\n" +
       "/search <текст> — поиск\n" +
+      "/get <id> — показать заметку полностью\n" +
       "/del <id> — удалить заметку",
   ),
 );
@@ -55,6 +57,21 @@ bot.command("search", (ctx) => {
   const notes = searchNotes(userId, query);
   if (notes.length === 0) return ctx.reply("Ничего не найдено.");
   return ctx.reply(notes.map(preview).join("\n"));
+});
+
+bot.command("get", (ctx) => {
+  const id = Number(ctx.match.trim());
+  if (!Number.isInteger(id)) return ctx.reply("Использование: /get <id>");
+  const userId = getOrCreateUser(ctx.from!.id);
+  const note = getNoteById(userId, id);
+  if (!note) return ctx.reply(`Заметка #${id} не найдена.`);
+
+  const icon = TYPE_ICON[note.type];
+  const lines: string[] = [`${icon} #${note.id}`];
+  if (note.content) lines.push(note.content);
+  if (note.file_path) lines.push(`📁 ${note.file_path}`);
+  lines.push(`📅 ${note.created_at}`);
+  return ctx.reply(lines.join("\n"));
 });
 
 bot.command("del", (ctx) => {
@@ -83,7 +100,13 @@ bot.on("message:photo", async (ctx) => {
   const caption = ctx.message.caption ?? null;
   const tags = caption ? extractTags(caption) : [];
   const path = await downloadFile(bot, ctx.from.id, photo.file_id);
-  const id = createNote({ userId, type: "image", content: caption, filePath: path, tags });
+  const id = createNote({
+    userId,
+    type: "image",
+    content: caption,
+    filePath: path,
+    tags,
+  });
   return ctx.reply(`Сохранено 🖼 #${id}`);
 });
 
@@ -94,7 +117,13 @@ bot.on("message:document", async (ctx) => {
   const caption = ctx.message.caption ?? doc.file_name ?? null;
   const tags = ctx.message.caption ? extractTags(ctx.message.caption) : [];
   const path = await downloadFile(bot, ctx.from.id, doc.file_id);
-  const id = createNote({ userId, type: "file", content: caption, filePath: path, tags });
+  const id = createNote({
+    userId,
+    type: "file",
+    content: caption,
+    filePath: path,
+    tags,
+  });
   return ctx.reply(`Сохранено 📎 #${id}`);
 });
 
@@ -106,6 +135,7 @@ bot.catch((err) => {
 await bot.api.setMyCommands([
   { command: "list", description: "Последние заметки" },
   { command: "search", description: "Поиск по заметкам" },
+  { command: "get", description: "Показать заметку по id" },
   { command: "del", description: "Удалить заметку по id" },
 ]);
 
