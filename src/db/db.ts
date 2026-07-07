@@ -10,7 +10,40 @@ export const db = new Database(config.dbPath, { create: true });
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 
-// Схема. Закладываем updated_at и soft delete (deleted_at) сразу —
+// Таблица для отслеживания применённых миграций
+db.exec(`
+  CREATE TABLE IF NOT EXISTS schema_migrations (
+    name TEXT PRIMARY KEY,
+    applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// --- Миграции ---
+
+function migrate(name: string, sql: string) {
+  const exists = db
+    .query<
+      { name: string },
+      [string]
+    >("SELECT name FROM schema_migrations WHERE name = ?")
+    .get(name);
+  if (!exists) {
+    db.exec(sql);
+    db.run("INSERT INTO schema_migrations (name) VALUES (?)", [name]);
+    console.log(`[migrate] applied: ${name}`);
+  }
+}
+
+// v1 — начальная схема (без telegram_message_id)
+// v2 — добавление telegram_message_id
+migrate(
+  "v2_add_telegram_message_id",
+  `
+  ALTER TABLE notes ADD COLUMN telegram_message_id INTEGER;
+`,
+);
+
+// Базовая схема для свежих инсталляций. Закладываем updated_at и soft delete (deleted_at) сразу —
 // чтобы позже можно было прикрутить веб-клиент / sync без миграции данных.
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
