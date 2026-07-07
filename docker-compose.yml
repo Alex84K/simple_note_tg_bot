@@ -1,10 +1,10 @@
 services:
   bot:
+    container_name: tg_sm_note_bot
     build: .
     restart: unless-stopped
     env_file: .env
     volumes:
-      # БД и файлы живут на хосте — переживают пересборку контейнера
       - ./data:/app/data
     logging:
       driver: "json-file"
