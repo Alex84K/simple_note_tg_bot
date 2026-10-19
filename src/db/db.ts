@@ -68,13 +68,3 @@ function migrate(name: string, sql: string) {
     console.log(`[migrate] applied: ${name}`);
   }
 }
-
-// v2 — добавление telegram_message_id (если таблица уже была создана ранее без него)
-migrate(
-  "v2_add_telegram_message_id",
-  `
-  -- На случай если колонка уже есть от CREATE TABLE, используем безопасный подход или оставляем ALTER
-  -- (Для SQLite, если колонка уже создана в CREATE TABLE, этот ALTER может выдать ошибку повторного добавления, 
-  -- поэтому можно обернуть в проверку или добавить колонку сразу в CREATE TABLE выше, а миграцию делать только для старых баз).
-`,
-);
